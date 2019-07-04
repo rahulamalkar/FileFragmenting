@@ -1,5 +1,6 @@
 #include <iostream>
 #include "md5.h"
+#include "md5.cc"
  
 using std::cout; using std::endl;
  
