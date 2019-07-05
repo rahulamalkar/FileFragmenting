@@ -5,15 +5,17 @@
 #include <iostream>
 #include <fstream>
 
-#define MAX_TRANSFER_SIZE	100
+#define TBR_LOG(msg) std::cout << std::endl << "TBR--- " << msg << std::endl;
+unsigned int MAX_TRANSFER_SIZE = 100;
 
 bool Fragmenter(std::string &contentFileName, std::string &content){
-		int contentLength = content.length();
 		std::string contentMd5 = md5(content);
-		std::cout << "md5: " << contentMd5 << std::endl;
+		//std::cout << "md5: " << contentMd5 << std::endl;
 		unsigned int sequence = 0;
 		unsigned int contentIndex = 0;
-		while((contentLength - MAX_TRANSFER_SIZE) > 0){
+		unsigned int contentFinalSequence = content.length() / MAX_TRANSFER_SIZE;
+
+		while(sequence <= contentFinalSequence){
 				rapidjson::StringBuffer s;
 				rapidjson::Writer<rapidjson::StringBuffer> writer(s);
 
@@ -22,12 +24,18 @@ bool Fragmenter(std::string &contentFileName, std::string &content){
 				writer.String(contentMd5.c_str());
 				writer.Key("sequence");
 				writer.Uint(sequence);
+				writer.Key("finalSequence");
+				writer.Uint(contentFinalSequence);
 				writer.Key("data");
-				writer.String(content.substr (contentIndex, contentIndex + MAX_TRANSFER_SIZE).c_str());
+				if(sequence == contentFinalSequence){
+						writer.String(content.substr (contentIndex, std::string::npos).c_str());
+				}else{
+						writer.String(content.substr (contentIndex, contentIndex + MAX_TRANSFER_SIZE).c_str());
+				}
 				writer.EndObject();
+
 				std::cout << s.GetString() << std::endl << std::endl;
 
-				contentLength -= MAX_TRANSFER_SIZE;
 				sequence++;
 				contentIndex += MAX_TRANSFER_SIZE;
 		}
@@ -41,7 +49,7 @@ int main(int argc, char** args)
 		std::string content( (std::istreambuf_iterator<char>(ifs) ),
 						(std::istreambuf_iterator<char>()    ) );
 
-		std::cout << " length:" << content.length() << std::endl;
+		//std::cout << " length:" << content.length() << std::endl;
 
 		if(content.length() > MAX_TRANSFER_SIZE){
 				if(!Fragmenter(fileName, content)){
